@@ -55,8 +55,38 @@ app.post('/api/users/:_id/exercises', (req, res) => {
   } else {
     log.push({ username, _id, count: 1, log: [exercise] });
   }
-  res.json(exercise)
+  res.json(user, exercise)
 });   
+
+app.get('/api/users/:_id/logs', (req, res) => {
+  const { _id } = req.params
+  const { from, to, limit } = req.query
+  const user = users.find(user => user._id === _id)
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' })
+  }
+  const userLog = log.find(log => log._id === _id);
+  if (!userLog) {
+    return res.status(404).json({ error: 'User log not found' })
+  }
+  const fromDate = from ? new Date(from) : new Date(0);
+  const toDate = to ? new Date(to) : new Date();
+  const filteredLogs = userLog.log.filter(log => {
+    const logDate = new Date(log.date);
+    return logDate >= fromDate && logDate <= toDate;
+  });
+  const result = {
+    username: user.username,
+    count: userLog.count,
+    _id: user._id,
+    log: filteredLogs
+  };
+  if (limit) {
+    result.log = result.log.slice(0, limit);
+  }
+  res.json(result);
+});
+
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
